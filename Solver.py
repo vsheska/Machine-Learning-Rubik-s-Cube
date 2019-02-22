@@ -86,7 +86,6 @@ def weighted_bfs(cube, regressor):
     if cube.solved():
         print("Cube already solved")
         return None
-    print(get_cube_score(cs.solvedcube(), regressor))
     PQ = [[get_cube_score(cube, regressor), cube, []]]
     visited = [cube]
     SolvedCube = cs.solvedcube()
@@ -95,10 +94,6 @@ def weighted_bfs(cube, regressor):
         print(curPair[2], curPair[0])
         curCube = curPair[1]
         curSeq = curPair[2]
-        if curPair[0] < -6/7:
-            train_regressor(curCube, regressor, -6/7)
-        train_regressor(SolvedCube, regressor, -1)
-        print(get_cube_score(SolvedCube, regressor))
         for i in range(6):
             newSeq = curSeq.copy()
             newSeq.append(cs.moveliststr[i])
@@ -111,29 +106,33 @@ def weighted_bfs(cube, regressor):
                 pass
             else:
                 PQ.append([get_cube_score(newCube, regressor), newCube.copy(), newSeq])
-                PQ.sort()
+                PQ.sort(key = lambda x: x[0])
                 visited.append(newCube.copy())
 
 
-def train_on_easy_random_cubes(num_cube, regressor):
-
-    for counter in range(num_cube):
-        if regressor == None:
+def train_on_easy_random_cubes(num_cube, regressor, scramble_length):
+    if regressor == None:
             regressor = make_dnn_regressor()
+    for counter in range(num_cube):
+        
     
-        (scramble, random_cube) = cs.randomcube(3)
+        (scramble, random_cube) = cs.randomcube(scramble_length)
         print ("Cube {0}".format(counter + 1))
         print(scramble)
         seq = weighted_bfs(random_cube, regressor)
         l = len(seq)
         train_regressor(random_cube, regressor, l)
         for i in range(l):
-            j = cs.moveliststr.index(seq[0])
+            j = cs.moveliststr.index(seq[i])
             cs.movelist[j](random_cube)
-            train_regressor(random_cube, regressor, min((l - i - 1)/7 - 1), 1)
+            train_regressor(random_cube, regressor, min((l - i - 1)/7 - 1, 1))
+        print("Solved Cube Value:")
+        print(get_cube_score(cs.solvedcube(), regressor))
     return regressor
 
 
-OutputRegressor = train_on_easy_random_cubes(100, None)
+OutputRegressor = train_on_easy_random_cubes(100, None, 1)
+OutputRegressor = train_on_easy_random_cubes(100, OutputRegressor, 2)
+OutputRegressor = train_on_easy_random_cubes(100, OutputRegressor, 3)
 
 
