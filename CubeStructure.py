@@ -1,6 +1,9 @@
 import random
 
 class Cube:
+    '''
+    
+    '''
     def __init__(self, clist):
         assert type(clist) == type([])
         assert len(clist) == 24
@@ -138,14 +141,13 @@ moveliststr = ["R", "Ri", "F", "Fi", "U", "Ui"]
 #                 PQ.append([newCube.copy(), newSeq])
                 
 def randomcube(n):
-    SolvedCube = Cube([0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 1, 1, 2, 2, 3, 3, 4, 4, 4, 4,
-                   5, 5, 5, 5])
-    A = SolvedCube.copy()
-    scramble = []
-    for i in range(n):     
-        r = random.randrange(6)
-        scramble.append(moveliststr[r])
-        movelist[r](A)
+    A = solvedcube()
+    while A.solved():
+        scramble = []
+        for i in range(random.randint(1, n)):     
+            r = random.randrange(6)
+            scramble.append(moveliststr[r])
+            movelist[r](A)
     return (scramble, A)
 
 def solvedcube():

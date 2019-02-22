@@ -12,9 +12,10 @@ def get_features(cube):
     processed_features = pd.DataFrame(data = d)
     return processed_features
 
-def make_targets():
+def make_targets(moves_away):
     output_targets = pd.DataFrame()
-    output_targets['movesaway'] = 14
+    output_targets['movesaway'] = [moves_away]
+    return output_targets
 
 def construct_feature_columns(input_features):
   """Construct the TensorFlow Feature Columns.
@@ -39,15 +40,20 @@ def my_input_fn(features):
     
     ds = Dataset.from_tensor_slices(features)
     ds = ds.batch(1)
-
     features = ds.make_one_shot_iterator().get_next()
  
     return features
 
-def train_nn_regression_model(
-    hidden_units,
-    training_example):
-    pass
+def my_training_input_fn(features, targets):
+    features = {key:np.array(value) for key,value in dict(features).items()}
+    
+    ds = Dataset.from_tensor_slices((features, targets))
+    ds = ds.batch(1)
+
+    (features, targets) = ds.make_one_shot_iterator().get_next()
+ 
+    return (features, targets)
+
 
 def get_cube_score(cube, regressor):
     features = get_features(cube)
@@ -58,23 +64,41 @@ def get_cube_score(cube, regressor):
 
 def make_dnn_regressor():
     features = get_features(cs.solvedcube())
-    my_optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.001)
+    my_optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.01)
     my_optimizer = tf.contrib.estimator.clip_gradients_by_norm(my_optimizer, 5.0)
 
     dnn_regressor = tf.estimator.DNNRegressor(
-        hidden_units = [144, 24],
+        hidden_units = [72, 24],
         feature_columns = construct_feature_columns(features),
         optimizer = my_optimizer)
     return dnn_regressor
 
+def train_regressor(cube, regressor, moves_away):
+    features = get_features(cube)
+    targets = make_targets(moves_away)
+
+    training_input_fn = lambda: my_training_input_fn(features, targets['movesaway'])
+    
+    regressor.train(input_fn = training_input_fn)
+
+
 def weighted_bfs(cube, regressor):
+    if cube.solved():
+        print("Cube already solved")
+        return None
+    print(get_cube_score(cs.solvedcube(), regressor))
     PQ = [[get_cube_score(cube, regressor), cube, []]]
     visited = [cube]
+    SolvedCube = cs.solvedcube()
     while True:
         curPair = PQ.pop(0)
         print(curPair[2], curPair[0])
         curCube = curPair[1]
         curSeq = curPair[2]
+        if curPair[0] < -6/7:
+            train_regressor(curCube, regressor, -6/7)
+        train_regressor(SolvedCube, regressor, -1)
+        print(get_cube_score(SolvedCube, regressor))
         for i in range(6):
             newSeq = curSeq.copy()
             newSeq.append(cs.moveliststr[i])
@@ -86,14 +110,30 @@ def weighted_bfs(cube, regressor):
             if newCube in visited:
                 pass
             else:
-                PQ.append([get_cube_score(cube, regressor), newCube.copy(), newSeq])
+                PQ.append([get_cube_score(newCube, regressor), newCube.copy(), newSeq])
                 PQ.sort()
                 visited.append(newCube.copy())
-        if curPair[0] < 1:
-            regressor.
 
-dnn_regressor = make_dnn_regressor()
 
-(scramble, random_cube) = cs.randomcube()
+def train_on_easy_random_cubes(num_cube, regressor):
 
-seq = weighted_bfs(random_cube, dnn_regressor)
+    for counter in range(num_cube):
+        if regressor == None:
+            regressor = make_dnn_regressor()
+    
+        (scramble, random_cube) = cs.randomcube(3)
+        print ("Cube {0}".format(counter + 1))
+        print(scramble)
+        seq = weighted_bfs(random_cube, regressor)
+        l = len(seq)
+        train_regressor(random_cube, regressor, l)
+        for i in range(l):
+            j = cs.moveliststr.index(seq[0])
+            cs.movelist[j](random_cube)
+            train_regressor(random_cube, regressor, min((l - i - 1)/7 - 1), 1)
+    return regressor
+
+
+OutputRegressor = train_on_easy_random_cubes(100, None)
+
+
