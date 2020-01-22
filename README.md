@@ -5,4 +5,4 @@ The CubeStructure.py file contains the structure of the cube, as well as methods
 
 The Solver.py file contains a weighted search, where the weights are given by a neural network generated through tensorflow.
 
-OldCode.py contains the original code from 2017, where the neural network was implemented without the use of common machine learning frameworks.
+OldCode.py contains the original code from 2017, where the neural network was implemented without the use of machine learning frameworks.
