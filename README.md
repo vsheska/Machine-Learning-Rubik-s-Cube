@@ -4,4 +4,3 @@ This repository contains the code used for my Rubik's Cube(2x2x2) machine learni
 The CubeStructure.py file contains the structure of the cube, as well as methods to manipulate. Also included are function to generate a solved cube, as well as generate a scrambled cube given a number of turns from the solved state.
 
 The Solver.py file contains a weighted search, where the weights are given by a neural network generated through tensorflow.
-There is currently no training of the neural network happening, although this should be added soon.
